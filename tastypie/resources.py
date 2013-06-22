@@ -1012,6 +1012,17 @@ class Resource(object):
                     related_type = 'to_one'
                 data['fields'][field_name]['related_type'] = related_type
 
+                if field_name in data['filtering']:
+                    data['filtering'][field_name] = {}
+                    related_obj = field_object.to_class()
+                    for related_field_name, related_field_object in related_obj.fields.items():
+                        if related_field_object.dehydrated_type == 'related':
+                            continue
+                        try:
+                            data['filtering'][field_name][related_field_name] = related_obj._meta.filtering[related_field_name]
+                        except KeyError:
+                            pass
+
         return data
 
     def dehydrate_resource_uri(self, bundle):
@@ -2423,7 +2434,7 @@ class ModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-                
+
                 #Only save related models if they're newly added.
                 if updated_related_bundle.obj._state.adding:
                     related_resource.save(updated_related_bundle)
